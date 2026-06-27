@@ -139,27 +139,24 @@
   .hub .h-title { font-weight: 700; font-size: 13px; color: var(--fg); }
   .hub .h-sub { font-size: 10px; color: var(--fg-dim); margin-top: 2px; }
 
-  /* connector SVG sits behind the nodes */
-  .wires { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+  /* connector SVG sits behind the nodes; paths drawn by script in real pixels */
+  .wires { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: visible; }
   .wire { stroke: var(--border); stroke-width: 1.5; fill: none; }
   .pulse { stroke-width: 2.5; fill: none; stroke-linecap: round; }
   .pulse.a { stroke: var(--amber); }
   .pulse.t { stroke: var(--teal); }
   .pulse.v { stroke: var(--violet); }
 
+  /* pulse paths get pathLength="100" from the script, so dashes are uniform
+     regardless of the real path length */
   @keyframes dash {
-    from { stroke-dashoffset: 0; }
-    to   { stroke-dashoffset: -340; }
+    from { stroke-dashoffset: 100; }
+    to   { stroke-dashoffset: 0; }
   }
   .pulse {
-    stroke-dasharray: 22 318;
+    stroke-dasharray: 12 88;
     animation: dash 2.4s linear infinite;
   }
-  .pulse.d1 { animation-delay: 0s; }
-  .pulse.d2 { animation-delay: 0.5s; }
-  .pulse.d3 { animation-delay: 1.0s; }
-  .pulse.d4 { animation-delay: 0.8s; }
-  .pulse.d5 { animation-delay: 1.4s; }
 
   .foot {
     position: absolute; bottom: 11px; right: 18px;
@@ -189,55 +186,99 @@
       The build log that <span class="grad">writes itself.</span>
     </div>
 
-    <!-- wires behind nodes -->
-    <svg class="wires" viewBox="0 0 640 230" preserveAspectRatio="none" aria-hidden="true">
-      <!-- left sources -> hub (converge at 305,115) -->
-      <path class="wire" d="M168,62 C230,62 250,115 305,115" />
-      <path class="wire" d="M168,115 C230,115 250,115 305,115" />
-      <path class="wire" d="M168,168 C230,168 250,115 305,115" />
-      <path class="pulse a d1" d="M168,62 C230,62 250,115 305,115" />
-      <path class="pulse a d2" d="M168,115 C230,115 250,115 305,115" />
-      <path class="pulse a d3" d="M168,168 C230,168 250,115 305,115" />
-      <!-- hub -> six platforms (fan out from 375,115) -->
-      <path class="wire" d="M375,115 C440,115 460,40 520,40" />
-      <path class="wire" d="M375,115 C440,115 460,70 520,70" />
-      <path class="wire" d="M375,115 C440,115 460,100 520,100" />
-      <path class="wire" d="M375,115 C440,115 460,130 520,130" />
-      <path class="wire" d="M375,115 C440,115 460,160 520,160" />
-      <path class="wire" d="M375,115 C440,115 460,190 520,190" />
-      <path class="pulse t d4" d="M375,115 C440,115 460,40 520,40" />
-      <path class="pulse v d5" d="M375,115 C440,115 460,70 520,70" />
-      <path class="pulse t d2" d="M375,115 C440,115 460,100 520,100" />
-      <path class="pulse v d1" d="M375,115 C440,115 460,130 520,130" />
-      <path class="pulse t d3" d="M375,115 C440,115 460,160 520,160" />
-      <path class="pulse v d4" d="M375,115 C440,115 460,190 520,190" />
-    </svg>
+    <!-- wires drawn by script from the real node positions, so they always line up -->
+    <svg class="wires" id="wires" aria-hidden="true"></svg>
 
-    <div class="flow">
+    <div class="flow" id="flow">
       <div class="col">
-        <div class="node"><span class="ic amber"></span>Claude Code</div>
-        <div class="node"><span class="ic amber"></span>Cursor</div>
-        <div class="node"><span class="ic amber"></span>MCP data</div>
+        <div class="node" data-side="in"><span class="ic amber"></span>Claude Code</div>
+        <div class="node" data-side="in"><span class="ic amber"></span>Cursor</div>
+        <div class="node" data-side="in"><span class="ic amber"></span>MCP data</div>
       </div>
 
       <div class="col center">
-        <div class="hub">
+        <div class="hub" id="hub">
           <div class="h-title">Bip</div>
           <div class="h-sub">logs &amp; writes</div>
         </div>
       </div>
 
       <div class="col platforms">
-        <div class="node"><span class="ic teal"></span>X</div>
-        <div class="node"><span class="ic violet"></span>LinkedIn</div>
-        <div class="node"><span class="ic teal"></span>Reddit</div>
-        <div class="node"><span class="ic violet"></span>TikTok</div>
-        <div class="node"><span class="ic teal"></span>Instagram</div>
-        <div class="node"><span class="ic violet"></span>YouTube</div>
+        <div class="node" data-side="out" data-c="t"><span class="ic teal"></span>X</div>
+        <div class="node" data-side="out" data-c="v"><span class="ic violet"></span>LinkedIn</div>
+        <div class="node" data-side="out" data-c="t"><span class="ic teal"></span>Reddit</div>
+        <div class="node" data-side="out" data-c="v"><span class="ic violet"></span>TikTok</div>
+        <div class="node" data-side="out" data-c="t"><span class="ic teal"></span>Instagram</div>
+        <div class="node" data-side="out" data-c="v"><span class="ic violet"></span>YouTube</div>
       </div>
     </div>
 
     <span class="foot">buildingbip.vercel.app</span>
   </a>
+
+  <script>
+    const SVGNS = "http://www.w3.org/2000/svg";
+    const wires = document.getElementById("wires");
+    const flow = document.getElementById("flow");
+    const hub = document.getElementById("hub");
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function center(el, root) {
+      const r = el.getBoundingClientRect();
+      const b = root.getBoundingClientRect();
+      return { x: r.left - b.left, y: r.top - b.top, w: r.width, h: r.height, cy: r.top - b.top + r.height / 2 };
+    }
+
+    function curve(x1, y1, x2, y2) {
+      const dx = (x2 - x1) * 0.5;
+      return `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`;
+    }
+
+    function draw() {
+      wires.innerHTML = "";
+      const root = wires.parentElement; // the card
+      const hb = center(hub, root);
+      const hubLeft = { x: hb.x, y: hb.cy };
+      const hubRight = { x: hb.x + hb.w, y: hb.cy };
+
+      const ins = [...flow.querySelectorAll('[data-side="in"]')];
+      const outs = [...flow.querySelectorAll('[data-side="out"]')];
+
+      let pulseIndex = 0;
+      const addPath = (d, kind, color) => {
+        const base = document.createElementNS(SVGNS, "path");
+        base.setAttribute("d", d);
+        base.setAttribute("class", "wire");
+        wires.appendChild(base);
+        if (!reduce) {
+          const p = document.createElementNS(SVGNS, "path");
+          p.setAttribute("d", d);
+          p.setAttribute("class", `pulse ${color}`);
+          p.setAttribute("pathLength", "100");
+          p.style.animationDelay = (pulseIndex++ * 0.32) + "s";
+          wires.appendChild(p);
+        }
+      };
+
+      // inputs -> hub left edge
+      ins.forEach((el) => {
+        const c = center(el, root);
+        addPath(curve(c.x + c.w, c.cy, hubLeft.x, hubLeft.y), "in", "a");
+      });
+      // hub right edge -> outputs
+      outs.forEach((el) => {
+        const c = center(el, root);
+        const color = el.getAttribute("data-c") || "t";
+        addPath(curve(hubRight.x, hubRight.y, c.x, c.cy), "out", color);
+      });
+    }
+
+    // draw after layout + fonts settle, and on resize
+    function schedule() { requestAnimationFrame(() => requestAnimationFrame(draw)); }
+    schedule();
+    window.addEventListener("load", schedule);
+    window.addEventListener("resize", schedule);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+  </script>
 </body>
 </html>
