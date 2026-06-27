@@ -123,6 +123,11 @@
   .node .ic.teal { background: var(--teal); box-shadow: 0 0 8px var(--teal); }
   .node .ic.violet { background: var(--violet); box-shadow: 0 0 8px var(--violet); }
 
+  /* right column has six platforms: tighter so they fit the same height */
+  .col.platforms { gap: 5px; }
+  .col.platforms .node { padding: 5px 9px; font-size: 10px; }
+  .col.platforms .node .ic { width: 6px; height: 6px; }
+
   .hub {
     background: linear-gradient(180deg, rgba(245,166,35,0.18), rgba(139,124,246,0.14));
     border: 1px solid var(--amber);
@@ -186,27 +191,33 @@
 
     <!-- wires behind nodes -->
     <svg class="wires" viewBox="0 0 640 230" preserveAspectRatio="none" aria-hidden="true">
-      <!-- left commits -> hub -->
-      <path class="wire" d="M150,70 C220,70 240,115 300,115" />
-      <path class="wire" d="M150,115 C220,115 240,115 300,115" />
-      <path class="wire" d="M150,160 C220,160 240,115 300,115" />
-      <path class="pulse a d1" d="M150,70 C220,70 240,115 300,115" />
-      <path class="pulse a d2" d="M150,115 C220,115 240,115 300,115" />
-      <path class="pulse a d3" d="M150,160 C220,160 240,115 300,115" />
-      <!-- hub -> right posts -->
-      <path class="wire" d="M390,115 C450,115 470,62 540,62" />
-      <path class="wire" d="M390,115 C450,115 470,115 540,115" />
-      <path class="wire" d="M390,115 C450,115 470,168 540,168" />
-      <path class="pulse t d4" d="M390,115 C450,115 470,62 540,62" />
-      <path class="pulse v d5" d="M390,115 C450,115 470,115 540,115" />
-      <path class="pulse t d2" d="M390,115 C450,115 470,168 540,168" />
+      <!-- left sources -> hub (converge at 305,115) -->
+      <path class="wire" d="M168,62 C230,62 250,115 305,115" />
+      <path class="wire" d="M168,115 C230,115 250,115 305,115" />
+      <path class="wire" d="M168,168 C230,168 250,115 305,115" />
+      <path class="pulse a d1" d="M168,62 C230,62 250,115 305,115" />
+      <path class="pulse a d2" d="M168,115 C230,115 250,115 305,115" />
+      <path class="pulse a d3" d="M168,168 C230,168 250,115 305,115" />
+      <!-- hub -> six platforms (fan out from 375,115) -->
+      <path class="wire" d="M375,115 C440,115 460,40 520,40" />
+      <path class="wire" d="M375,115 C440,115 460,70 520,70" />
+      <path class="wire" d="M375,115 C440,115 460,100 520,100" />
+      <path class="wire" d="M375,115 C440,115 460,130 520,130" />
+      <path class="wire" d="M375,115 C440,115 460,160 520,160" />
+      <path class="wire" d="M375,115 C440,115 460,190 520,190" />
+      <path class="pulse t d4" d="M375,115 C440,115 460,40 520,40" />
+      <path class="pulse v d5" d="M375,115 C440,115 460,70 520,70" />
+      <path class="pulse t d2" d="M375,115 C440,115 460,100 520,100" />
+      <path class="pulse v d1" d="M375,115 C440,115 460,130 520,130" />
+      <path class="pulse t d3" d="M375,115 C440,115 460,160 520,160" />
+      <path class="pulse v d4" d="M375,115 C440,115 460,190 520,190" />
     </svg>
 
     <div class="flow">
       <div class="col">
-        <div class="node"><span class="ic amber"></span>git commit</div>
-        <div class="node"><span class="ic amber"></span>fixed the bug</div>
-        <div class="node"><span class="ic amber"></span>shipped it</div>
+        <div class="node"><span class="ic amber"></span>Claude Code</div>
+        <div class="node"><span class="ic amber"></span>Cursor</div>
+        <div class="node"><span class="ic amber"></span>MCP data</div>
       </div>
 
       <div class="col center">
@@ -216,10 +227,13 @@
         </div>
       </div>
 
-      <div class="col">
-        <div class="node"><span class="ic teal"></span>X thread</div>
+      <div class="col platforms">
+        <div class="node"><span class="ic teal"></span>X</div>
         <div class="node"><span class="ic violet"></span>LinkedIn</div>
         <div class="node"><span class="ic teal"></span>Reddit</div>
+        <div class="node"><span class="ic violet"></span>TikTok</div>
+        <div class="node"><span class="ic teal"></span>Instagram</div>
+        <div class="node"><span class="ic violet"></span>YouTube</div>
       </div>
     </div>
 
