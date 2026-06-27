@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bip — Build in public, keep your job</title>
+<meta name="description" content="Bip keeps a log of your real dev work while you code, then turns it into honest build-in-public posts in your own words. No face, no pitch." />
+
+<meta property="og:title" content="Bip — Build in public, keep your job" />
+<meta property="og:description" content="A tool that turns your real dev work into honest build-in-public posts. No face, no pitch, no marketing voice. Built in the open." />
+<meta property="og:type" content="website" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --bg: #0B1020;
+    --surface: #141d33;
+    --border: #29344c;
+    --fg: #F4F7FF;
+    --fg-dim: #9fb0cc;
+    --fg-faint: #5f6f8c;
+
+    --amber: #F5A623;
+    --amber-hi: #ffc24d;
+    --teal: #2dd4bf;
+    --violet: #8b7cf6;
+    --on-accent: #160f02;
+
+    --radius: 12px;
+    --maxw: 620px;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 16px;
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    overflow-x: hidden;
+  }
+
+  /* moving gradient glow — the "alive" layer */
+  .glow {
+    position: fixed;
+    inset: -30% -10% auto -10%;
+    height: 80vh;
+    z-index: 0;
+    pointer-events: none;
+    filter: blur(70px);
+    opacity: 0.55;
+    background:
+      radial-gradient(40% 50% at 20% 30%, rgba(245, 166, 35, 0.45), transparent 70%),
+      radial-gradient(45% 55% at 80% 20%, rgba(139, 124, 246, 0.40), transparent 70%),
+      radial-gradient(50% 60% at 50% 80%, rgba(45, 212, 191, 0.38), transparent 70%);
+    animation: drift 16s ease-in-out infinite alternate;
+  }
+  @keyframes drift {
+    0%   { transform: translate3d(-4%, -2%, 0) scale(1); }
+    50%  { transform: translate3d(3%, 2%, 0) scale(1.08); }
+    100% { transform: translate3d(5%, -3%, 0) scale(1.04); }
+  }
+
+  /* faint film grain so it still feels like the devlog identity */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.03;
+    z-index: 1;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  main {
+    width: 100%;
+    max-width: var(--maxw);
+    position: relative;
+    z-index: 2;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--fg-dim);
+    border: 1px solid var(--border);
+    background: rgba(20, 29, 51, 0.6);
+    backdrop-filter: blur(8px);
+    padding: 6px 13px;
+    border-radius: 999px;
+    margin-bottom: 28px;
+  }
+  .tag .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--teal);
+    box-shadow: 0 0 10px var(--teal);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:0.4 } }
+
+  /* terminal-style prompt line above the headline */
+  .prompt {
+    font-size: 14px;
+    color: var(--fg-faint);
+    margin: 0 0 14px;
+  }
+  .prompt .sigil { color: var(--teal); }
+  .prompt .typed { color: var(--fg-dim); }
+  .prompt .cursor {
+    display: inline-block;
+    width: 9px; height: 1.05em;
+    background: var(--amber);
+    vertical-align: -2px;
+    margin-left: 2px;
+    animation: blink 1.05s steps(1) infinite;
+  }
+  @keyframes blink { 0%,50%{ opacity:1 } 50.01%,100%{ opacity:0 } }
+
+  h1 {
+    font-size: clamp(32px, 7.5vw, 50px);
+    line-height: 1.12;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    margin: 0 0 22px;
+  }
+  h1 .grad {
+    background: linear-gradient(100deg, var(--amber) 0%, var(--amber-hi) 35%, var(--violet) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .lede {
+    font-size: 16px;
+    color: var(--fg-dim);
+    margin: 0 0 16px;
+    max-width: 54ch;
+  }
+
+  .note {
+    font-size: 15px;
+    color: var(--fg-dim);
+    border-left: 2px solid;
+    border-image: linear-gradient(180deg, var(--amber), var(--violet)) 1;
+    padding: 4px 0 4px 16px;
+    margin: 0 0 32px;
+    max-width: 54ch;
+  }
+  .note strong { color: var(--fg); font-weight: 600; }
+
+  form { display: flex; gap: 10px; margin: 0 0 16px; flex-wrap: wrap; }
+  label.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  input[type="email"] {
+    flex: 1 1 240px;
+    min-width: 0;
+    height: 52px;
+    padding: 0 16px;
+    font-family: inherit;
+    font-size: 16px;
+    color: var(--fg);
+    background: rgba(20, 29, 51, 0.7);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: border-color 180ms ease, box-shadow 180ms ease;
+  }
+  input[type="email"]::placeholder { color: var(--fg-faint); }
+  input[type="email"]:focus {
+    outline: none;
+    border-color: var(--amber);
+    box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.20);
+  }
+
+  button {
+    height: 52px;
+    padding: 0 22px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--on-accent);
+    background: linear-gradient(100deg, var(--amber), var(--amber-hi));
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 6px 24px rgba(245, 166, 35, 0.28);
+    transition: transform 80ms ease, box-shadow 180ms ease, filter 180ms ease;
+  }
+  button:hover { filter: brightness(1.06); box-shadow: 0 8px 30px rgba(245, 166, 35, 0.4); }
+  button:active { transform: scale(0.98); }
+  button:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.5); }
+  button:disabled { opacity: 0.55; cursor: default; filter: none; }
+
+  .fine { font-size: 13px; color: var(--fg-faint); margin: 0; max-width: 54ch; }
+
+  .status { font-size: 14px; margin: 14px 0 0; min-height: 20px; }
+  .status.ok { color: var(--teal); }
+  .status.err { color: #f87171; }
+
+  footer { margin-top: 46px; font-size: 13px; color: var(--fg-faint); position: relative; z-index: 2; }
+  footer a { color: var(--fg-dim); text-decoration: none; border-bottom: 1px solid var(--border); }
+  footer a:hover { color: var(--amber); }
+
+  /* ── devlog card fan: real entries become the visual ── */
+  .fan-wrap {
+    margin: 56px auto 0;
+    position: relative;
+    height: 230px;
+    width: 100%;
+    max-width: 540px;
+    z-index: 2;
+  }
+  .fan-caption {
+    text-align: center;
+    font-size: 12px;
+    color: var(--fg-faint);
+    margin: 0 0 26px;
+    letter-spacing: 0.02em;
+  }
+  .fan {
+    position: relative;
+    height: 170px;
+    perspective: 1000px;
+  }
+  .fan-card {
+    position: absolute;
+    left: 50%;
+    top: 10px;
+    width: 215px;
+    margin-left: -107px;
+    padding: 13px 15px;
+    background: linear-gradient(180deg, rgba(24,33,57,0.96), rgba(17,24,44,0.96));
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+    transform-origin: 50% 130%;
+    transition: transform 300ms ease, box-shadow 300ms ease;
+    backdrop-filter: blur(4px);
+  }
+  .fan-card .fc-meta {
+    font-size: 10px;
+    color: var(--teal);
+    margin-bottom: 7px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .fan-card .fc-meta .feel { color: var(--amber); }
+  .fan-card .fc-text {
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--fg-dim);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  /* spread the cards into a gentle fan */
+  .fan-card:nth-child(1) { transform: rotate(-16deg) translateY(14px); z-index: 1; opacity: 0.85; }
+  .fan-card:nth-child(2) { transform: rotate(-8deg) translateY(4px);  z-index: 2; opacity: 0.93; }
+  .fan-card:nth-child(3) { transform: rotate(0deg);                   z-index: 3; }
+  .fan-card:nth-child(4) { transform: rotate(8deg) translateY(4px);   z-index: 2; opacity: 0.93; }
+  .fan-card:nth-child(5) { transform: rotate(16deg) translateY(14px); z-index: 1; opacity: 0.85; }
+  /* breathe: a slow idle sway so it feels alive */
+  .fan:hover .fan-card { animation: none; }
+  .fan-card { animation: sway 7s ease-in-out infinite; }
+  .fan-card:nth-child(2) { animation-delay: 0.3s; }
+  .fan-card:nth-child(3) { animation-delay: 0.6s; }
+  .fan-card:nth-child(4) { animation-delay: 0.9s; }
+  .fan-card:nth-child(5) { animation-delay: 1.2s; }
+  @keyframes sway {
+    0%, 100% { translate: 0 0; }
+    50% { translate: 0 -5px; }
+  }
+  /* lift the hovered card forward */
+  .fan-card:hover {
+    transform: rotate(0deg) translateY(-10px) scale(1.05) !important;
+    z-index: 20 !important;
+    opacity: 1 !important;
+    box-shadow: 0 26px 60px rgba(0,0,0,0.6);
+    border-color: var(--amber);
+  }
+  @media (max-width: 520px) {
+    .fan-card { width: 180px; margin-left: -90px; }
+    .fan-card:nth-child(1), .fan-card:nth-child(5) { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="glow" aria-hidden="true"></div>
+
+  <main>
+    <span class="tag"><span class="dot" aria-hidden="true"></span>Day 6, building in the open</span>
+
+    <p class="prompt"><span class="sigil">~/bip $</span> <span class="typed" id="typed"></span><span class="cursor" aria-hidden="true"></span></p>
+
+    <h1>Your code<br /><span class="grad">already wrote the post.</span></h1>
+
+    <p class="lede">
+      Building in public works, but the personal brand grind is the part most developers hate.
+      Bip keeps a log of your real dev work while you code, then turns it into honest build-in-public posts in your own words.
+      No face. No pitch. No marketing voice. Just the work, written down.
+    </p>
+
+    <p class="note">
+      <strong>It is not ready yet.</strong>
+      I am building Bip in the open right now. It is not something you can download today.
+      Leave your email and I will send you one message, the day you can actually try it.
+      That is the whole deal. No newsletter, no drip sequence, no selling.
+    </p>
+
+    <form id="signup" novalidate>
+      <label class="sr" for="email">Email address</label>
+      <input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="your@email.com" required />
+      <button type="submit" id="submit">Tell me when I can try it</button>
+    </form>
+
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+
+    <p class="fine">
+      Made for developers who build on the side and would rather not sell themselves online.
+      One email, only when it is real.
+    </p>
+
+    <div class="fan-wrap" aria-hidden="true">
+      <p class="fan-caption">Real entries from the log that builds this. Hover one.</p>
+      <div class="fan">
+        <div class="fan-card">
+          <div class="fc-meta"><span>day 2</span><span class="feel">relieved</span></div>
+          <div class="fc-text">Killed the live file watcher. The dev decides when a session is done, not a script firing on every keystroke.</div>
+        </div>
+        <div class="fan-card">
+          <div class="fc-meta"><span>day 4</span><span class="feel">breakthrough</span></div>
+          <div class="fc-text">One day = one story = one post. Stopped generating seven posts about the same afternoon.</div>
+        </div>
+        <div class="fan-card">
+          <div class="fc-meta"><span>day 5</span><span class="feel">frustrated</span></div>
+          <div class="fc-text">Built a tool that makes work visible. A whole day went unlogged because one config file sat in the wrong folder.</div>
+        </div>
+        <div class="fan-card">
+          <div class="fc-meta"><span>day 6</span><span class="feel">breakthrough</span></div>
+          <div class="fc-text">Renamed it to Bip, short for build in public. Kept the old folders so the history stays honest.</div>
+        </div>
+        <div class="fan-card">
+          <div class="fc-meta"><span>day 6</span><span class="feel">relieved</span></div>
+          <div class="fc-text">A work diary, not a self-promotion machine. Posted under the project, not my name. Build in public, keep your job.</div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      Following the build on <a href="#" id="x-link" target="_blank" rel="noopener">@buildingbip</a>.
+    </footer>
+  </main>
+
+  <script>
+    // ── EMAIL: paste your Formspree endpoint here (https://formspree.io, free) ──
+    // 1. make a free Formspree account, 2. create a form, 3. paste its URL below.
+    // Until you do, the page confirms locally so it stays testable.
+    const FORM_ENDPOINT = "https://formspree.io/f/xdargwla";
+
+    // ── tiny typed-line animation in the terminal prompt ──
+    (function typeLine() {
+      const el = document.getElementById("typed");
+      if (!el) return;
+      const text = "git commit -m 'shipped something, told nobody'";
+      let i = 0;
+      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (prefersReduced) { el.textContent = text; return; }
+      (function step() {
+        el.textContent = text.slice(0, i);
+        if (i++ <= text.length) setTimeout(step, 38);
+      })();
+    })();
+
+    const form = document.getElementById("signup");
+    const email = document.getElementById("email");
+    const submit = document.getElementById("submit");
+    const status = document.getElementById("status");
+
+    function setStatus(msg, kind) {
+      status.textContent = msg;
+      status.className = "status" + (kind ? " " + kind : "");
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const value = email.value.trim();
+      const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+      if (!valid) {
+        setStatus("That email does not look right. Mind checking it?", "err");
+        email.focus();
+        return;
+      }
+      submit.disabled = true;
+      setStatus("Saving your spot...", "");
+      try {
+        if (FORM_ENDPOINT) {
+          const res = await fetch(FORM_ENDPOINT, {
+            method: "POST",
+            headers: { "Accept": "application/json", "Content-Type": "application/json" },
+            body: JSON.stringify({ email: value }),
+          });
+          if (!res.ok) throw new Error("bad response");
+        } else {
+          await new Promise((r) => setTimeout(r, 500));
+        }
+        form.reset();
+        setStatus("Got it. I will send you one message the day you can try Bip.", "ok");
+      } catch (err) {
+        setStatus("Something went wrong on my end. Try again in a moment?", "err");
+      } finally {
+        submit.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
