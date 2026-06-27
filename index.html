@@ -215,6 +215,69 @@
   footer a { color: var(--fg-dim); text-decoration: none; border-bottom: 1px solid var(--border); }
   footer a:hover { color: var(--amber); }
 
+  /* ── the flow: input -> Bip -> platforms ── */
+  .flow-section { margin: 40px 0 4px; position: relative; z-index: 2; }
+  .flow-box {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background:
+      radial-gradient(500px 220px at 12% 0%, rgba(245,166,35,0.08), transparent 60%),
+      radial-gradient(500px 220px at 100% 100%, rgba(139,124,246,0.10), transparent 60%),
+      linear-gradient(180deg, #18223c, #141d33);
+    padding: 26px 22px;
+    overflow: hidden;
+  }
+  .flow {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 188px;
+  }
+  .flow .col { display: flex; flex-direction: column; gap: 9px; z-index: 2; flex: 0 0 auto; }
+  .flow .col.center { align-items: center; }
+  .flow .node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 11px;
+    font-size: 11px;
+    color: var(--fg-dim);
+    white-space: nowrap;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .flow .node .ic { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+  .flow .node .ic.amber { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+  .flow .node .ic.teal { background: var(--teal); box-shadow: 0 0 8px var(--teal); }
+  .flow .node .ic.violet { background: var(--violet); box-shadow: 0 0 8px var(--violet); }
+  .flow .col.platforms { gap: 5px; }
+  .flow .col.platforms .node { padding: 5px 9px; font-size: 10px; }
+  .flow .col.platforms .node .ic { width: 6px; height: 6px; }
+  .flow .hub {
+    background: linear-gradient(180deg, rgba(245,166,35,0.18), rgba(139,124,246,0.14));
+    border: 1px solid var(--amber);
+    border-radius: 13px;
+    padding: 13px 16px;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(245,166,35,0.18);
+  }
+  .flow .hub .h-title { font-weight: 700; font-size: 14px; color: var(--fg); }
+  .flow .hub .h-sub { font-size: 10px; color: var(--fg-dim); margin-top: 2px; }
+  .flow .wires { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: visible; }
+  .flow .wire { stroke: var(--border); stroke-width: 1.5; fill: none; }
+  .flow .pulse { stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-dasharray: 12 88; animation: flowdash 2.4s linear infinite; }
+  .flow .pulse.a { stroke: var(--amber); }
+  .flow .pulse.t { stroke: var(--teal); }
+  .flow .pulse.v { stroke: var(--violet); }
+  @keyframes flowdash { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+  .flow-label { text-align: center; font-size: 12px; color: var(--fg-faint); margin: 14px 0 0; }
+  @media (max-width: 520px) {
+    .flow .node { font-size: 10px; padding: 6px 8px; }
+    .flow .col.platforms .node { font-size: 9px; }
+  }
+
   /* ── devlog card fan: real entries become the visual ── */
   .fan-wrap {
     margin: 56px auto 0;
@@ -326,6 +389,34 @@
       That is the whole deal. No newsletter, no drip sequence, no selling.
     </p>
 
+    <div class="flow-section">
+      <div class="flow-box">
+        <svg class="wires" id="lp-wires" aria-hidden="true"></svg>
+        <div class="flow" id="lp-flow">
+          <div class="col">
+            <div class="node" data-side="in"><span class="ic amber"></span>Claude Code</div>
+            <div class="node" data-side="in"><span class="ic amber"></span>Cursor</div>
+            <div class="node" data-side="in"><span class="ic amber"></span>MCP data</div>
+          </div>
+          <div class="col center">
+            <div class="hub" id="lp-hub">
+              <div class="h-title">Bip</div>
+              <div class="h-sub">logs &amp; writes</div>
+            </div>
+          </div>
+          <div class="col platforms">
+            <div class="node" data-side="out" data-c="t"><span class="ic teal"></span>X</div>
+            <div class="node" data-side="out" data-c="v"><span class="ic violet"></span>LinkedIn</div>
+            <div class="node" data-side="out" data-c="t"><span class="ic teal"></span>Reddit</div>
+            <div class="node" data-side="out" data-c="v"><span class="ic violet"></span>TikTok</div>
+            <div class="node" data-side="out" data-c="t"><span class="ic teal"></span>Instagram</div>
+            <div class="node" data-side="out" data-c="v"><span class="ic violet"></span>YouTube</div>
+          </div>
+        </div>
+      </div>
+      <p class="flow-label">You code. Bip reads the work and writes the posts.</p>
+    </div>
+
     <form id="signup" novalidate>
       <label class="sr" for="email">Email address</label>
       <input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="your@email.com" required />
@@ -430,6 +521,53 @@
         submit.disabled = false;
       }
     });
+  </script>
+
+  <!-- draw the flow wires from the real node positions -->
+  <script>
+    (function () {
+      const SVGNS = "http://www.w3.org/2000/svg";
+      const wires = document.getElementById("lp-wires");
+      const flow = document.getElementById("lp-flow");
+      const hub = document.getElementById("lp-hub");
+      if (!wires || !flow || !hub) return;
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      function pos(el, root) {
+        const r = el.getBoundingClientRect(), b = root.getBoundingClientRect();
+        return { x: r.left - b.left, y: r.top - b.top, w: r.width, cy: r.top - b.top + r.height / 2 };
+      }
+      function curve(x1, y1, x2, y2) {
+        const dx = (x2 - x1) * 0.5;
+        return `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`;
+      }
+      function draw() {
+        const root = flow;
+        wires.innerHTML = "";
+        const hb = pos(hub, root);
+        const ins = [...flow.querySelectorAll('[data-side="in"]')];
+        const outs = [...flow.querySelectorAll('[data-side="out"]')];
+        let i = 0;
+        const add = (d, color) => {
+          const w = document.createElementNS(SVGNS, "path");
+          w.setAttribute("d", d); w.setAttribute("class", "wire"); wires.appendChild(w);
+          if (!reduce) {
+            const p = document.createElementNS(SVGNS, "path");
+            p.setAttribute("d", d); p.setAttribute("class", "pulse " + color);
+            p.setAttribute("pathLength", "100");
+            p.style.animationDelay = (i++ * 0.32) + "s";
+            wires.appendChild(p);
+          }
+        };
+        ins.forEach((el) => { const c = pos(el, root); add(curve(c.x + c.w, c.cy, hb.x, hb.cy), "a"); });
+        outs.forEach((el) => { const c = pos(el, root); add(curve(hb.x + hb.w, hb.cy, c.x, c.cy), el.getAttribute("data-c") || "t"); });
+      }
+      function schedule() { requestAnimationFrame(() => requestAnimationFrame(draw)); }
+      schedule();
+      window.addEventListener("load", schedule);
+      window.addEventListener("resize", schedule);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+    })();
   </script>
 
   <!-- Vercel Web Analytics (static-site version, no build step needed) -->
