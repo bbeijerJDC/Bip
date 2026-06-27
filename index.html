@@ -240,21 +240,22 @@
   .flow .col.center { align-items: center; }
   .flow .node {
     background: var(--surface);
-    border: 1px solid var(--border);
+    border: 1px solid #3a4866;
     border-radius: 10px;
-    padding: 8px 11px;
-    font-size: 11px;
-    color: var(--fg-dim);
+    padding: 9px 13px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--fg);
     white-space: nowrap;
-    display: flex; align-items: center; gap: 7px;
+    display: flex; align-items: center; gap: 8px;
   }
-  .flow .node .ic { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+  .flow .node .ic { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
   .flow .node .ic.amber { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
   .flow .node .ic.teal { background: var(--teal); box-shadow: 0 0 8px var(--teal); }
   .flow .node .ic.violet { background: var(--violet); box-shadow: 0 0 8px var(--violet); }
-  .flow .col.platforms { gap: 5px; }
-  .flow .col.platforms .node { padding: 5px 9px; font-size: 10px; }
-  .flow .col.platforms .node .ic { width: 6px; height: 6px; }
+  .flow .col.platforms { gap: 6px; }
+  .flow .col.platforms .node { padding: 7px 11px; font-size: 12px; }
+  .flow .col.platforms .node .ic { width: 7px; height: 7px; }
   .flow .hub {
     background: linear-gradient(180deg, rgba(245,166,35,0.18), rgba(139,124,246,0.14));
     border: 1px solid var(--amber);
@@ -266,11 +267,16 @@
   .flow .hub .h-title { font-weight: 700; font-size: 14px; color: var(--fg); }
   .flow .hub .h-sub { font-size: 10px; color: var(--fg-dim); margin-top: 2px; }
   .flow .wires { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: visible; }
-  .flow .wire { stroke: var(--border); stroke-width: 1.5; fill: none; }
-  .flow .pulse { stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-dasharray: 12 88; animation: flowdash 2.4s linear infinite; }
-  .flow .pulse.a { stroke: var(--amber); }
-  .flow .pulse.t { stroke: var(--teal); }
-  .flow .pulse.v { stroke: var(--violet); }
+  .flow .wire { stroke: #36425e; stroke-width: 1.5; fill: none; }
+  .flow .pulse {
+    stroke-width: 3; fill: none; stroke-linecap: round;
+    stroke-dasharray: 14 86;
+    animation: flowdash 2s linear infinite;
+    filter: drop-shadow(0 0 4px currentColor);
+  }
+  .flow .pulse.a { stroke: var(--amber); color: var(--amber); }
+  .flow .pulse.t { stroke: var(--teal); color: var(--teal); }
+  .flow .pulse.v { stroke: var(--violet); color: var(--violet); }
   @keyframes flowdash { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
   .flow-label { text-align: center; font-size: 12px; color: var(--fg-faint); margin: 14px 0 0; }
   @media (max-width: 520px) {
@@ -376,19 +382,6 @@
 
     <h1>Your code<br /><span class="grad">already wrote the post.</span></h1>
 
-    <p class="lede">
-      Building in public works, but the personal brand grind is the part most developers hate.
-      Bip keeps a log of your real dev work while you code, then turns it into honest build-in-public posts in your own words.
-      No face. No pitch. No marketing voice. Just the work, written down.
-    </p>
-
-    <p class="note">
-      <strong>It is not ready yet.</strong>
-      I am building Bip in the open right now. It is not something you can download today.
-      Leave your email and I will send you one message, the day you can actually try it.
-      That is the whole deal. No newsletter, no drip sequence, no selling.
-    </p>
-
     <div class="flow-section">
       <div class="flow-box">
         <svg class="wires" id="lp-wires" aria-hidden="true"></svg>
@@ -424,6 +417,19 @@
     </form>
 
     <p class="status" id="status" role="status" aria-live="polite"></p>
+
+    <p class="lede">
+      Building in public works, but the personal brand grind is the part most developers hate.
+      Bip keeps a log of your real dev work while you code, then turns it into honest build-in-public posts in your own words.
+      No face. No pitch. No marketing voice. Just the work, written down.
+    </p>
+
+    <p class="note">
+      <strong>It is not ready yet.</strong>
+      I am building Bip in the open right now. It is not something you can download today.
+      Leave your email and I will send you one message, the day you can actually try it.
+      That is the whole deal. No newsletter, no drip sequence, no selling.
+    </p>
 
     <p class="fine">
       Made for developers who build on the side and would rather not sell themselves online.
