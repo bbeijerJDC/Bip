@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bip — the build log that writes itself</title>
+<meta name="description" content="Your dev work becomes build-in-public posts. Automatically." />
+<meta property="og:title" content="Bip — the build log that writes itself" />
+<meta property="og:description" content="Code as usual. Bip logs the build and turns it into honest build-in-public posts." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0B1020;
+    --surface: #141d33;
+    --surface2: #18223c;
+    --border: #29344c;
+    --fg: #F4F7FF;
+    --fg-dim: #9fb0cc;
+    --fg-faint: #5f6f8c;
+    --amber: #F5A623;
+    --amber-hi: #ffc24d;
+    --teal: #2dd4bf;
+    --violet: #8b7cf6;
+    --on-accent: #160f02;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  /* the card itself — sized for a clean screenshot (close to 16:9 social card) */
+  a.card {
+    display: block;
+    text-decoration: none;
+    width: 100%;
+    max-width: 640px;
+    aspect-ratio: 16 / 10;
+    border-radius: 18px;
+    border: 1px solid var(--border);
+    background:
+      radial-gradient(600px 300px at 15% 0%, rgba(245,166,35,0.10), transparent 60%),
+      radial-gradient(600px 300px at 100% 100%, rgba(139,124,246,0.12), transparent 60%),
+      linear-gradient(180deg, var(--surface2), var(--surface));
+    box-shadow: 0 24px 70px rgba(0,0,0,0.5);
+    overflow: hidden;
+    position: relative;
+    color: var(--fg);
+  }
+  /* faint grain */
+  a.card::after {
+    content: "";
+    position: absolute; inset: 0; pointer-events: none;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 0;
+  }
+  .brand { display: flex; align-items: center; gap: 9px; }
+  .brand .logo {
+    width: 26px; height: 26px; border-radius: 7px;
+    background: linear-gradient(135deg, var(--amber), var(--amber-hi));
+    display: grid; place-items: center;
+    color: var(--on-accent); font-weight: 700; font-size: 15px;
+  }
+  .brand .name { font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+  .badge {
+    font-size: 11px; color: var(--teal);
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 4px 10px;
+  }
+
+  .headline {
+    padding: 14px 24px 0;
+    font-size: clamp(17px, 3.5vw, 22px);
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+  .headline .grad {
+    background: linear-gradient(100deg, var(--amber), var(--amber-hi) 40%, var(--violet));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  /* ── the flow ── */
+  .flow {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 56%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 26px 18px;
+    gap: 8px;
+  }
+  .col { display: flex; flex-direction: column; gap: 9px; z-index: 2; flex: 0 0 auto; }
+  .col.center { align-items: center; }
+
+  .node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 11px;
+    font-size: 11px;
+    color: var(--fg-dim);
+    white-space: nowrap;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .node .ic { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+  .node .ic.amber { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+  .node .ic.teal { background: var(--teal); box-shadow: 0 0 8px var(--teal); }
+  .node .ic.violet { background: var(--violet); box-shadow: 0 0 8px var(--violet); }
+
+  .hub {
+    background: linear-gradient(180deg, rgba(245,166,35,0.18), rgba(139,124,246,0.14));
+    border: 1px solid var(--amber);
+    border-radius: 13px;
+    padding: 13px 15px;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(245,166,35,0.18);
+  }
+  .hub .h-title { font-weight: 700; font-size: 13px; color: var(--fg); }
+  .hub .h-sub { font-size: 10px; color: var(--fg-dim); margin-top: 2px; }
+
+  /* connector SVG sits behind the nodes */
+  .wires { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+  .wire { stroke: var(--border); stroke-width: 1.5; fill: none; }
+  .pulse { stroke-width: 2.5; fill: none; stroke-linecap: round; }
+  .pulse.a { stroke: var(--amber); }
+  .pulse.t { stroke: var(--teal); }
+  .pulse.v { stroke: var(--violet); }
+
+  @keyframes dash {
+    from { stroke-dashoffset: 0; }
+    to   { stroke-dashoffset: -340; }
+  }
+  .pulse {
+    stroke-dasharray: 22 318;
+    animation: dash 2.4s linear infinite;
+  }
+  .pulse.d1 { animation-delay: 0s; }
+  .pulse.d2 { animation-delay: 0.5s; }
+  .pulse.d3 { animation-delay: 1.0s; }
+  .pulse.d4 { animation-delay: 0.8s; }
+  .pulse.d5 { animation-delay: 1.4s; }
+
+  .foot {
+    position: absolute; bottom: 11px; right: 18px;
+    font-size: 10.5px; color: var(--fg-faint); z-index: 3;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pulse { animation: none; stroke-dasharray: none; opacity: 0.9; }
+  }
+  @media (max-width: 460px) {
+    .node { font-size: 10px; padding: 6px 8px; }
+    .hub .h-title { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+  <a class="card" href="https://x.com/buildingbip" target="_blank" rel="noopener" aria-label="Bip, the build log that writes itself">
+    <div class="top">
+      <div class="brand">
+        <span class="logo">B</span>
+        <span class="name">Bip</span>
+      </div>
+      <span class="badge">building in public</span>
+    </div>
+
+    <div class="headline">
+      The build log that <span class="grad">writes itself.</span>
+    </div>
+
+    <!-- wires behind nodes -->
+    <svg class="wires" viewBox="0 0 640 230" preserveAspectRatio="none" aria-hidden="true">
+      <!-- left commits -> hub -->
+      <path class="wire" d="M150,70 C220,70 240,115 300,115" />
+      <path class="wire" d="M150,115 C220,115 240,115 300,115" />
+      <path class="wire" d="M150,160 C220,160 240,115 300,115" />
+      <path class="pulse a d1" d="M150,70 C220,70 240,115 300,115" />
+      <path class="pulse a d2" d="M150,115 C220,115 240,115 300,115" />
+      <path class="pulse a d3" d="M150,160 C220,160 240,115 300,115" />
+      <!-- hub -> right posts -->
+      <path class="wire" d="M390,115 C450,115 470,62 540,62" />
+      <path class="wire" d="M390,115 C450,115 470,115 540,115" />
+      <path class="wire" d="M390,115 C450,115 470,168 540,168" />
+      <path class="pulse t d4" d="M390,115 C450,115 470,62 540,62" />
+      <path class="pulse v d5" d="M390,115 C450,115 470,115 540,115" />
+      <path class="pulse t d2" d="M390,115 C450,115 470,168 540,168" />
+    </svg>
+
+    <div class="flow">
+      <div class="col">
+        <div class="node"><span class="ic amber"></span>git commit</div>
+        <div class="node"><span class="ic amber"></span>fixed the bug</div>
+        <div class="node"><span class="ic amber"></span>shipped it</div>
+      </div>
+
+      <div class="col center">
+        <div class="hub">
+          <div class="h-title">Bip</div>
+          <div class="h-sub">logs &amp; writes</div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="node"><span class="ic teal"></span>X thread</div>
+        <div class="node"><span class="ic violet"></span>LinkedIn</div>
+        <div class="node"><span class="ic teal"></span>Reddit</div>
+      </div>
+    </div>
+
+    <span class="foot">buildingbip.vercel.app</span>
+  </a>
+</body>
+</html>
