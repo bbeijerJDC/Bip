@@ -275,17 +275,18 @@
   }
   .flow .hub .h-title { font-weight: 700; font-size: 14px; color: var(--fg); }
   .flow .hub .h-sub { font-size: 10px; color: var(--fg-dim); margin-top: 2px; }
-  .flow .wires { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: visible; }
-  .flow .wire { stroke: #36425e; stroke-width: 1.5; fill: none; }
-  .flow .pulse {
-    stroke-width: 3; fill: none; stroke-linecap: round;
+  /* SVG sits in .flow-box (next to .flow), so style it there, not under .flow */
+  .flow-box .wires { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: visible; }
+  .flow-box .wire { stroke: #36425e; stroke-width: 1.5; fill: none; }
+  .flow-box .pulse {
+    stroke-width: 3.5; fill: none; stroke-linecap: round;
     stroke-dasharray: 14 86;
     animation: flowdash 2s linear infinite;
-    filter: drop-shadow(0 0 4px currentColor);
+    filter: drop-shadow(0 0 5px currentColor);
   }
-  .flow .pulse.a { stroke: var(--amber); color: var(--amber); }
-  .flow .pulse.t { stroke: var(--teal); color: var(--teal); }
-  .flow .pulse.v { stroke: var(--violet); color: var(--violet); }
+  .flow-box .pulse.a { stroke: var(--amber); color: var(--amber); }
+  .flow-box .pulse.t { stroke: var(--teal); color: var(--teal); }
+  .flow-box .pulse.v { stroke: var(--violet); color: var(--violet); }
   @keyframes flowdash { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
   .flow-label { text-align: center; font-size: 12px; color: var(--fg-faint); margin: 14px 0 0; }
   @media (max-width: 520px) {
